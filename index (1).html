@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ponto da linha de frente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#18212F; --muted:#5B6676; --line:#D5DBE3; --track:#E4E9EF;
+  --warn:#B45309; --warn-bg:#FEF3E2; --focus:#1E5BD8;
+  --e0:#2563A8; --e1:#C2410C; --e2:#0F8A6C; --e3:#8B3FB8; --e4:#B8860B; --e5:#BE185D;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#11161E; --surface:#19212C; --ink:#E6EBF2; --muted:#9AA5B4; --line:#2A3442; --track:#232D3A;
+  --warn:#F59E0B; --warn-bg:#3A2A10; --focus:#7DA6FF;
+  --e0:#6AA7F0; --e1:#F08A5D; --e2:#3CC9A0; --e3:#C08AEB; --e4:#E5C048; --e5:#F472B6; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#11161E; --surface:#19212C; --ink:#E6EBF2; --muted:#9AA5B4; --line:#2A3442; --track:#232D3A;
+  --warn:#F59E0B; --warn-bg:#3A2A10; --focus:#7DA6FF;
+  --e0:#6AA7F0; --e1:#F08A5D; --e2:#3CC9A0; --e3:#C08AEB; --e4:#E5C048; --e5:#F472B6; color-scheme:dark;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.num,h1,h2,.big{font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1;margin:0;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--muted);margin-top:6px}
+h2{font-size:24px;margin:0 0 4px;font-weight:600}
+.hint{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+button,.btn,input,select{font:inherit;color:inherit}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:8px;cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.btn:hover{border-color:var(--muted)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:18px}
+.filters{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:flex-end}
+.filters label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.filters input[type=date]{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--bg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px 5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500}
+.chip .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.chip[aria-pressed="false"]{opacity:.45}
+.chip[aria-pressed="true"]{border-color:var(--c)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.person{border-left:4px solid var(--c);padding:4px 0 4px 14px}
+.person .name{font-weight:600;text-transform:capitalize}
+.person .big{font-size:40px;font-weight:700;line-height:1.05}
+.person .dec{color:var(--muted);font-size:13px}
+.person dl{display:grid;grid-template-columns:auto auto;gap:2px 14px;margin:10px 0 0;font-size:13.5px}
+.person dt{color:var(--muted)} .person dd{margin:0;text-align:right}
+.person .pend{color:var(--warn);font-weight:600}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:600;font-size:13px;color:var(--muted);position:sticky;top:0;background:var(--surface)}
+thead th .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:6px}
+td.num,th.num{font-size:16px}
+td.empty{color:var(--line)}
+td.inc{background:var(--warn-bg);color:var(--warn);font-weight:600}
+tr.wk td:first-child{color:var(--muted)}
+tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none;font-size:18px}
+td .day{display:inline-block;width:34px;color:var(--muted)}
+td.daytot{color:var(--muted)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:11px;font-family:"Public Sans",system-ui,sans-serif}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:-1px}
+/* cartão de ponto */
+.card{display:grid;grid-template-columns:150px 1fr 74px;gap:6px 14px;align-items:center}
+.card .hdr{font-size:12px;color:var(--muted)}
+.axis{position:relative;height:18px}
+.axis span{position:absolute;transform:translateX(-50%);font-size:11px;color:var(--muted)}
+.who{font-size:13.5px;line-height:1.25}
+.who b{text-transform:capitalize;font-weight:600}
+.who small{color:var(--muted);display:block}
+.track{position:relative;height:24px;background:var(--track);border-radius:4px;overflow:hidden}
+.track .grid{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.seg{position:absolute;top:3px;bottom:3px;background:var(--c);border-radius:3px}
+.tick{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:repeating-linear-gradient(var(--warn) 0 4px,transparent 4px 7px)}
+.hrs{text-align:right;font-family:"Barlow Semi Condensed",sans-serif;font-size:17px;font-weight:600}
+.hrs.inc{color:var(--warn)}
+.punches{grid-column:2/4;font-size:12px;color:var(--muted);margin:-4px 0 8px}
+.pendlist{list-style:none;padding:0;margin:0}
+.pendlist li{padding:10px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.pendlist li:last-child{border-bottom:none}
+.pendlist .what{color:var(--warn);font-weight:600}
+.empty-state{color:var(--muted);padding:12px 0}
+details summary{cursor:pointer;font-weight:600}
+.set{display:flex;flex-wrap:wrap;gap:18px;margin-top:12px}
+.set label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);max-width:260px}
+.set input{border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--bg);width:110px}
+.msg{margin-top:10px;font-size:14px}
+.msg.err{color:var(--warn);font-weight:600}
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:none;padding:8px 12px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+@media (max-width:640px){
+  .card{grid-template-columns:96px 1fr 58px;gap:4px 8px}
+  .punches{grid-column:1/4}
+  .wrap{padding:18px 12px 40px}
+  section{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1 id="title">Ponto da linha de frente</h1>
+    <div class="sub" id="source"></div>
+  </div>
+  <div class="actions">
+    <label class="btn primary" for="file">Carregar novo .txt</label>
+    <input type="file" id="file" accept=".txt,text/plain" hidden>
+    <button class="btn" id="reset" hidden>Voltar ao arquivo original</button>
+  </div>
+</header>
+<div class="msg" id="msg" role="status"></div>
+
+<section aria-label="Filtros">
+  <div class="filters">
+    <div class="f"><div class="hint" style="margin:0 0 4px">Funcionários</div><div class="chips" id="chips"></div></div>
+    <label class="f">De<input type="date" id="from"></label>
+    <label class="f">Até<input type="date" id="to"></label>
+    <label class="check"><input type="checkbox" id="onlyInc"> Só dias com marcação incompleta</label>
+  </div>
+</section>
+
+<section>
+  <h2>Total do mês por funcionário</h2>
+  <p class="hint">Soma das horas trabalhadas no período filtrado. Intervalos (almoço, café) já estão descontados.</p>
+  <div class="people" id="people"></div>
+</section>
+
+<section>
+  <h2>Horas por dia</h2>
+  <p class="hint">Dia do turno = dia da primeira marcação. Turnos que passam da meia-noite contam no dia em que começaram.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="table">Tabela</button>
+    <button role="tab" aria-selected="false" data-tab="chart">Gráfico</button>
+  </div>
+  <div id="tab-table" class="scroll"><table id="matrix"></table></div>
+  <div id="tab-chart" hidden><div class="scroll"><svg class="chart" id="chart"></svg></div><div class="legend" id="legend"></div></div>
+</section>
+
+<section>
+  <h2>Cartão de ponto</h2>
+  <p class="hint">Cada linha é um turno, das 06h às 06h do dia seguinte. Barras coloridas são horas trabalhadas; o espaço entre elas é intervalo. Marca tracejada = batida sem par.</p>
+  <div class="scroll"><div id="cards" style="min-width:520px"></div></div>
+</section>
+
+<section>
+  <h2>Marcações para conferir</h2>
+  <p class="hint">Turnos com número ímpar de batidas. Só as horas com entrada e saída fechadas foram somadas.</p>
+  <ul class="pendlist" id="pend"></ul>
+</section>
+
+<section>
+  <details>
+    <summary>Ajustes do cálculo</summary>
+    <div class="set">
+      <label>Novo turno começa após (horas sem bater ponto)<input type="number" id="gap" min="4" max="30" step="1" value="16"></label>
+      <label>Ignorar batidas repetidas em até (minutos)<input type="number" id="dup" min="0" max="15" step="1" value="2"></label>
+    </div>
+  </details>
+</section>
+</div>
+
+<script type="text/plain" id="raw">Tra. No.	Nome	dept.	Tempo	Máquina No.	
+6	jorge	Linha de frente	 01/09/2026     12:14:24	1
+6	jorge	Linha de frente	 02/09/2026     02:24:44	1
+6	jorge	Linha de frente	 03/09/2026     11:27:12	1
+22	junior	Linha de frente	 03/09/2026     18:21:13	1
+22	junior	Linha de frente	 03/09/2026     23:10:06	1
+6	jorge	Linha de frente	 04/09/2026     00:21:45	1
+20	lohane	Linha de frente	 04/09/2026     10:58:10	1
+20	lohane	Linha de frente	 04/09/2026     16:07:50	1
+20	lohane	Linha de frente	 04/09/2026     17:39:46	1
+20	lohane	Linha de frente	 04/09/2026     23:20:20	1
+22	junior	Linha de frente	 05/09/2026     10:50:32	1
+23	isadora	Linha de frente	 06/09/2026     10:22:21	1
+20	lohane	Linha de frente	 06/09/2026     11:08:43	1
+23	isadora	Linha de frente	 06/09/2026     15:02:02	1
+23	isadora	Linha de frente	 06/09/2026     16:00:33	1
+20	lohane	Linha de frente	 06/09/2026     16:15:32	1
+20	lohane	Linha de frente	 06/09/2026     17:49:12	1
+23	isadora	Linha de frente	 06/09/2026     20:03:21	1
+23	isadora	Linha de frente	 06/09/2026     20:31:16	1
+23	isadora	Linha de frente	 06/09/2026     22:02:30	1
+20	lohane	Linha de frente	 06/09/2026     23:07:15	1
+22	junior	Linha de frente	 07/09/2026     10:33:27	1
+22	junior	Linha de frente	 07/09/2026     15:04:17	1
+22	junior	Linha de frente	 07/09/2026     16:40:15	1
+22	junior	Linha de frente	 07/09/2026     22:16:53	1
+20	lohane	Linha de frente	 08/09/2026     10:01:40	1
+23	isadora	Linha de frente	 08/09/2026     11:26:50	1
+20	lohane	Linha de frente	 08/09/2026     14:24:54	1
+20	lohane	Linha de frente	 08/09/2026     15:53:54	1
+23	isadora	Linha de frente	 08/09/2026     16:34:38	1
+23	isadora	Linha de frente	 08/09/2026     17:33:53	1
+23	isadora	Linha de frente	 08/09/2026     19:57:02	1
+23	isadora	Linha de frente	 08/09/2026     20:27:03	1
+20	lohane	Linha de frente	 08/09/2026     22:01:09	1
+23	isadora	Linha de frente	 08/09/2026     23:16:44	1
+22	junior	Linha de frente	 09/09/2026     10:21:15	1
+6	jorge	Linha de frente	 09/09/2026     12:46:43	1
+22	junior	Linha de frente	 09/09/2026     14:59:01	1
+22	junior	Linha de frente	 09/09/2026     16:28:33	1
+22	junior	Linha de frente	 09/09/2026     22:19:00	1
+23	isadora	Linha de frente	 10/09/2026     09:57:29	1
+20	lohane	Linha de frente	 10/09/2026     10:54:30	1
+23	isadora	Linha de frente	 10/09/2026     16:01:10	1
+23	isadora	Linha de frente	 10/09/2026     17:01:08	1
+20	lohane	Linha de frente	 10/09/2026     17:39:45	1
+20	lohane	Linha de frente	 10/09/2026     19:10:13	1
+23	isadora	Linha de frente	 10/09/2026     20:07:01	1
+23	isadora	Linha de frente	 10/09/2026     20:36:33	1
+23	isadora	Linha de frente	 10/09/2026     22:01:22	1
+20	lohane	Linha de frente	 10/09/2026     23:11:12	1
+22	junior	Linha de frente	 11/09/2026     10:04:31	1
+22	junior	Linha de frente	 11/09/2026     15:09:45	1
+22	junior	Linha de frente	 11/09/2026     16:39:33	1
+22	junior	Linha de frente	 11/09/2026     22:25:31	1
+20	lohane	Linha de frente	 12/09/2026     09:53:06	1
+23	isadora	Linha de frente	 12/09/2026     11:38:43	1
+20	lohane	Linha de frente	 12/09/2026     14:53:37	1
+20	lohane	Linha de frente	 12/09/2026     16:27:30	1
+23	isadora	Linha de frente	 12/09/2026     16:37:01	1
+23	isadora	Linha de frente	 12/09/2026     17:32:53	1
+23	isadora	Linha de frente	 12/09/2026     20:19:39	1
+23	isadora	Linha de frente	 12/09/2026     20:48:37	1
+20	lohane	Linha de frente	 12/09/2026     22:08:22	1
+23	isadora	Linha de frente	 12/09/2026     23:30:41	1
+22	junior	Linha de frente	 13/09/2026     10:36:07	1
+22	junior	Linha de frente	 13/09/2026     14:22:28	1
+22	junior	Linha de frente	 13/09/2026     15:38:16	1
+22	junior	Linha de frente	 13/09/2026     22:02:16	1
+23	isadora	Linha de frente	 14/09/2026     10:07:44	1
+20	lohane	Linha de frente	 14/09/2026     10:53:24	1
+23	isadora	Linha de frente	 14/09/2026     15:02:10	1
+23	isadora	Linha de frente	 14/09/2026     16:01:25	1
+20	lohane	Linha de frente	 14/09/2026     16:07:45	1
+20	lohane	Linha de frente	 14/09/2026     17:39:06	1
+23	isadora	Linha de frente	 14/09/2026     22:06:01	1
+20	lohane	Linha de frente	 14/09/2026     23:31:14	1
+22	junior	Linha de frente	 15/09/2026     10:03:27	1
+22	junior	Linha de frente	 15/09/2026     13:58:14	1
+22	junior	Linha de frente	 15/09/2026     15:32:51	1
+22	junior	Linha de frente	 15/09/2026     22:02:21	1
+20	lohane	Linha de frente	 16/09/2026     09:45:44	1
+23	isadora	Linha de frente	 16/09/2026     11:27:51	1
+20	lohane	Linha de frente	 16/09/2026     14:36:12	1
+20	lohane	Linha de frente	 16/09/2026     16:06:43	1
+23	isadora	Linha de frente	 16/09/2026     16:22:25	1
+23	isadora	Linha de frente	 16/09/2026     17:20:06	1
+23	isadora	Linha de frente	 16/09/2026     20:03:01	1
+23	isadora	Linha de frente	 16/09/2026     20:31:27	1
+20	lohane	Linha de frente	 16/09/2026     22:01:46	1
+23	isadora	Linha de frente	 16/09/2026     23:16:47	1
+22	junior	Linha de frente	 17/09/2026     10:03:33	1
+22	junior	Linha de frente	 17/09/2026     14:19:48	1
+22	junior	Linha de frente	 17/09/2026     15:50:11	1
+22	junior	Linha de frente	 17/09/2026     22:08:28	1
+20	lohane	Linha de frente	 18/09/2026     09:47:40	1
+23	isadora	Linha de frente	 18/09/2026     11:54:09	1
+20	lohane	Linha de frente	 18/09/2026     15:30:20	1
+20	lohane	Linha de frente	 18/09/2026     16:54:56	1
+23	isadora	Linha de frente	 18/09/2026     17:20:05	1
+23	isadora	Linha de frente	 18/09/2026     18:19:00	1
+20	lohane	Linha de frente	 18/09/2026     23:43:26	1
+22	junior	Linha de frente	 19/09/2026     10:23:37	1
+22	junior	Linha de frente	 19/09/2026     14:37:36	1
+22	junior	Linha de frente	 19/09/2026     16:05:44	1
+22	junior	Linha de frente	 19/09/2026     21:54:42	1
+20	lohane	Linha de frente	 20/09/2026     09:44:04	1
+23	isadora	Linha de frente	 20/09/2026     11:23:38	1
+20	lohane	Linha de frente	 20/09/2026     15:46:03	1
+20	lohane	Linha de frente	 20/09/2026     17:10:57	1
+23	isadora	Linha de frente	 20/09/2026     17:17:42	1
+23	isadora	Linha de frente	 20/09/2026     18:16:32	1
+20	lohane	Linha de frente	 20/09/2026     22:19:34	1
+23	isadora	Linha de frente	 20/09/2026     23:48:05	1
+22	junior	Linha de frente	 21/09/2026     10:57:59	1
+22	junior	Linha de frente	 21/09/2026     13:59:23	1
+22	junior	Linha de frente	 21/09/2026     15:29:40	1
+22	junior	Linha de frente	 21/09/2026     22:03:35	1
+20	lohane	Linha de frente	 22/09/2026     09:48:02	1
+23	isadora	Linha de frente	 22/09/2026     11:30:41	1
+20	lohane	Linha de frente	 22/09/2026     14:32:54	1
+20	lohane	Linha de frente	 22/09/2026     16:02:55	1
+23	isadora	Linha de frente	 22/09/2026     16:10:13	1
+23	isadora	Linha de frente	 22/09/2026     17:19:21	1
+23	isadora	Linha de frente	 22/09/2026     20:00:05	1
+23	isadora	Linha de frente	 22/09/2026     20:20:00	1
+23	isadora	Linha de frente	 22/09/2026     23:20:21	1
+22	junior	Linha de frente	 23/09/2026     09:56:28	1
+22	junior	Linha de frente	 23/09/2026     14:08:30	1
+22	junior	Linha de frente	 23/09/2026     15:37:15	1
+22	junior	Linha de frente	 23/09/2026     22:14:30	1
+20	lohane	Linha de frente	 24/09/2026     09:50:06	1
+23	isadora	Linha de frente	 24/09/2026     11:31:29	1
+20	lohane	Linha de frente	 24/09/2026     14:08:06	1
+20	lohane	Linha de frente	 24/09/2026     15:38:15	1
+23	isadora	Linha de frente	 24/09/2026     15:55:05	1
+23	isadora	Linha de frente	 24/09/2026     16:54:24	1
+23	isadora	Linha de frente	 24/09/2026     19:44:11	1
+23	isadora	Linha de frente	 24/09/2026     20:13:34	1
+20	lohane	Linha de frente	 24/09/2026     22:32:52	1
+23	isadora	Linha de frente	 25/09/2026     00:25:14	1
+22	junior	Linha de frente	 25/09/2026     10:01:05	1
+22	junior	Linha de frente	 25/09/2026     15:37:08	1
+22	junior	Linha de frente	 25/09/2026     17:16:40	1
+22	junior	Linha de frente	 25/09/2026     22:06:33	1
+23	isadora	Linha de frente	 26/09/2026     10:04:50	1
+20	lohane	Linha de frente	 26/09/2026     10:49:43	1
+23	isadora	Linha de frente	 26/09/2026     14:55:05	1
+23	isadora	Linha de frente	 26/09/2026     15:54:34	1
+20	lohane	Linha de frente	 26/09/2026     16:09:25	1
+20	lohane	Linha de frente	 26/09/2026     17:38:32	1
+23	isadora	Linha de frente	 26/09/2026     20:26:01	1
+23	isadora	Linha de frente	 26/09/2026     20:50:04	1
+23	isadora	Linha de frente	 26/09/2026     22:03:01	1
+20	lohane	Linha de frente	 27/09/2026     00:10:24	1
+22	junior	Linha de frente	 27/09/2026     10:34:47	1
+22	junior	Linha de frente	 27/09/2026     14:21:54	1
+22	junior	Linha de frente	 27/09/2026     15:48:57	1
+22	junior	Linha de frente	 27/09/2026     20:15:27	1
+20	lohane	Linha de frente	 28/09/2026     09:47:55	1
+23	isadora	Linha de frente	 28/09/2026     11:08:12	1
+20	lohane	Linha de frente	 28/09/2026     14:25:03	1
+20	lohane	Linha de frente	 28/09/2026     15:54:57	1
+23	isadora	Linha de frente	 28/09/2026     16:10:08	1
+23	isadora	Linha de frente	 28/09/2026     17:09:05	1
+23	isadora	Linha de frente	 28/09/2026     20:35:23	1
+23	isadora	Linha de frente	 28/09/2026     21:00:12	1
+20	lohane	Linha de frente	 28/09/2026     22:01:19	1
+23	isadora	Linha de frente	 29/09/2026     00:32:10	1
+22	junior	Linha de frente	 29/09/2026     10:01:11	1
+22	junior	Linha de frente	 29/09/2026     14:52:34	1
+22	junior	Linha de frente	 29/09/2026     16:18:49	1
+22	junior	Linha de frente	 29/09/2026     22:02:05	1
+20	lohane	Linha de frente	 30/09/2026     09:52:25	1
+23	isadora	Linha de frente	 30/09/2026     10:56:32	1
+20	lohane	Linha de frente	 30/09/2026     14:52:19	1
+20	lohane	Linha de frente	 30/09/2026     16:23:29	1
+23	isadora	Linha de frente	 30/09/2026     16:30:07	1
+23	isadora	Linha de frente	 30/09/2026     17:59:33	1
+20	lohane	Linha de frente	 30/09/2026     22:25:52	1
+23	isadora	Linha de frente	 30/09/2026     23:31:48	1
+</script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const HOUR=3600000, DAY=86400000;
+const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MONTHS=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const LS_TXT='ponto:txt', LS_NAME='ponto:nome', LS_SET='ponto:ajustes';
+const ORIGINAL_NAME='Registo de comparec. 09.txt';
+
+const st={raw:'',srcName:'',punches:[],emps:[],sel:new Set(),from:null,to:null,onlyInc:false,gap:16,dup:2,tab:'table'};
+
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+
+const pad=n=>String(n).padStart(2,'0');
+const dkey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const fromKey=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+const ddmm=d=>pad(d.getDate())+'/'+pad(d.getMonth()+1);
+function fmt(ms){const t=Math.round(ms/60000);return Math.floor(t/60)+'h'+pad(t%60)}
+const dec=ms=>(ms/HOUR).toFixed(2).replace('.',',')+' h';
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+function decode(buf){
+  const b=new Uint8Array(buf);
+  if(b[0]===0xFF&&b[1]===0xFE)return new TextDecoder('utf-16le').decode(buf);
+  if(b[0]===0xFE&&b[1]===0xFF)return new TextDecoder('utf-16be').decode(buf);
+  if(b.length>4&&b[1]===0&&b[3]===0)return new TextDecoder('utf-16le').decode(buf);
+  let t=new TextDecoder('utf-8').decode(buf);
+  if(t.includes('\uFFFD'))t=new TextDecoder('windows-1252').decode(buf);
+  return t;
+}
+
+function parse(text){
+  const out=[];
+  for(const line of text.split(/\r?\n/)){
+    const m=line.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if(!m)continue;
+    const cols=line.split('\t').map(s=>s.trim());
+    if(!/^\d+$/.test(cols[0]||''))continue;
+    const name=(cols[1]||('#'+cols[0])).toLowerCase();
+    const t=new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5],+(m[6]||0));
+    if(isNaN(t))continue;
+    out.push({id:cols[0],name,t});
+  }
+  return out;
+}
+
+function buildShifts(){
+  const by={};
+  for(const p of st.punches)(by[p.id]=by[p.id]||[]).push(p.t);
+  const shifts=[];
+  for(const id in by){
+    const ts=by[id].sort((a,b)=>a-b);
+    const clean=[];
+    for(const t of ts){const last=clean[clean.length-1];if(last&&(t-last)<=st.dup*60000)continue;clean.push(t)}
+    let cur=null;
+    for(const t of clean){
+      if(!cur||(t-cur.p[cur.p.length-1])>st.gap*HOUR){cur={id,p:[]};shifts.push(cur)}
+      cur.p.push(t);
+    }
+  }
+  for(const s of shifts){
+    s.emp=st.emps.find(e=>e.id===s.id);
+    s.day=dkey(s.p[0]);
+    s.pairs=[];s.work=0;s.brk=0;
+    for(let i=0;i+1<s.p.length;i+=2){s.pairs.push([s.p[i],s.p[i+1]]);s.work+=s.p[i+1]-s.p[i]}
+    for(let i=1;i+1<s.p.length;i+=2)s.brk+=s.p[i+1]-s.p[i];
+    s.inc=s.p.length%2===1;
+    s.loose=s.inc?s.p[s.p.length-1]:null;
+  }
+  return shifts.sort((a,b)=>a.p[0]-b.p[0]);
+}
+
+function load(text,name,fromUser){
+  const punches=parse(text);
+  if(!punches.length){
+    showMsg('Não encontrei marcações nesse arquivo. Confira se é o "Registo de comparec." exportado do relógio de ponto.',true);
+    return false;
+  }
+  st.raw=text;st.srcName=name;st.punches=punches;
+  const m=new Map();
+  for(const p of punches)if(!m.has(p.id))m.set(p.id,p.name);
+  st.emps=[...m].map(([id,name],i)=>({id,name,c:'var(--e'+(i%6)+')'})).sort((a,b)=>a.name.localeCompare(b.name));
+  st.emps.forEach((e,i)=>e.c='var(--e'+(i%6)+')');
+  st.sel=new Set(st.emps.map(e=>e.id));
+  const times=punches.map(p=>p.t.getTime());
+  const min=new Date(Math.min(...times)), max=new Date(Math.max(...times));
+  const first=new Date(min.getFullYear(),min.getMonth(),1);
+  const lastM=new Date(max.getFullYear(),max.getMonth()+1,0);
+  st.from=dkey(first);st.to=dkey(lastM);
+  $('#from').value=st.from;$('#to').value=st.to;
+  $('#reset').hidden=!fromUser;
+  const mesmoMes=min.getMonth()===max.getMonth()||(max-lastM<DAY);
+  $('#title').textContent='Ponto da linha de frente, '+MONTHS[min.getMonth()]+' de '+min.getFullYear();
+  $('#source').textContent='Arquivo: '+name+' ('+punches.length+' marcações, '+st.emps.length+' funcionários)';
+  document.title='Ponto '+MONTHS[min.getMonth()]+' '+min.getFullYear();
+  renderChips();render();
+  return true;
+}
+
+function showMsg(t,err){const el=$('#msg');el.textContent=t;el.className='msg'+(err?' err':'');if(!err&&t)setTimeout(()=>{if(el.textContent===t)el.textContent=''},5000)}
+
+function renderChips(){
+  const box=$('#chips');box.innerHTML='';
+  for(const e of st.emps){
+    const b=document.createElement('button');b.className='chip';b.style.setProperty('--c',e.c);
+    b.setAttribute('aria-pressed',st.sel.has(e.id));
+    b.innerHTML='<span class="dot"></span>'+cap(e.name);
+    b.onclick=()=>{st.sel.has(e.id)?st.sel.delete(e.id):st.sel.add(e.id);b.setAttribute('aria-pressed',st.sel.has(e.id));render()};
+    box.appendChild(b);
+  }
+}
+
+function render(){
+  const all=buildShifts();
+  const emps=st.emps.filter(e=>st.sel.has(e.id));
+  let shifts=all.filter(s=>st.sel.has(s.id)&&s.day>=st.from&&s.day<=st.to);
+  const visible=st.onlyInc?shifts.filter(s=>s.inc):shifts;
+  renderPeople(emps,shifts);
+  renderMatrix(emps,visible);
+  renderChart(emps,visible);
+  renderCards(visible);
+  renderPend(shifts);
+}
+
+function renderPeople(emps,shifts){
+  const box=$('#people');
+  if(!emps.length){box.innerHTML='<div class="empty-state">Escolha pelo menos um funcionário nos filtros.</div>';return}
+  box.innerHTML=emps.map(e=>{
+    const ss=shifts.filter(s=>s.id===e.id);
+    const tot=ss.reduce((a,s)=>a+s.work,0), brk=ss.reduce((a,s)=>a+s.brk,0);
+    const days=new Set(ss.map(s=>s.day)).size;
+    const inc=ss.filter(s=>s.inc).length;
+    const maxS=ss.reduce((a,s)=>s.work>a.work?s:a,{work:0});
+    return `<div class="person" style="--c:${e.c}">
+      <div class="name">${cap(e.name)} <span style="color:var(--muted);font-weight:400">nº ${e.id}</span></div>
+      <div class="big">${fmt(tot)}</div><div class="dec">${dec(tot)}</div>
+      <dl><dt>Dias trabalhados</dt><dd>${days}</dd>
+      <dt>Média por dia</dt><dd>${days?fmt(tot/days):'—'}</dd>
+      <dt>Maior jornada</dt><dd>${maxS.work?fmt(maxS.work)+' ('+ddmm(maxS.p[0])+')':'—'}</dd>
+      <dt>Intervalos no mês</dt><dd>${fmt(brk)}</dd>
+      <dt>Para conferir</dt><dd class="${inc?'pend':''}">${inc?inc+(inc>1?' turnos':' turno'):'nenhum'}</dd></dl>
+    </div>`}).join('');
+}
+
+function dayList(){
+  const out=[];
+  for(let d=fromKey(st.from);dkey(d)<=st.to;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1))out.push(dkey(d));
+  return out;
+}
+
+function renderMatrix(emps,shifts){
+  const t=$('#matrix');
+  if(!emps.length){t.innerHTML='';return}
+  const cell={};
+  for(const s of shifts){const k=s.day+'|'+s.id;(cell[k]=cell[k]||{w:0,inc:false,s:[]});cell[k].w+=s.work;cell[k].inc=cell[k].inc||s.inc;cell[k].s.push(s)}
+  let days=dayList();
+  if(st.onlyInc)days=days.filter(d=>emps.some(e=>cell[d+'|'+e.id]));
+  const tot={};let grand=0;
+  let h='<thead><tr><th>Dia</th>'+emps.map(e=>`<th style="--c:${e.c}"><span class="dot"></span>${cap(e.name)}</th>`).join('')+(emps.length>1?'<th>Total do dia</th>':'')+'</tr></thead><tbody>';
+  for(const d of days){
+    const dt=fromKey(d);let dsum=0;
+    h+=`<tr class="${dt.getDay()%6===0?'wk':''}"><td><span class="day">${WD[dt.getDay()]}</span>${ddmm(dt)}</td>`;
+    for(const e of emps){
+      const c=cell[d+'|'+e.id];
+      if(!c){h+='<td class="num empty">—</td>';continue}
+      tot[e.id]=(tot[e.id]||0)+c.w;dsum+=c.w;
+      const tip=c.s.map(s=>s.p.map(hm).join(' • ')).join(' | ');
+      h+=`<td class="num${c.inc?' inc':''}" title="Batidas: ${tip}${c.inc?' (incompleto)':''}">${fmt(c.w)}${c.inc?' *':''}</td>`;
+    }
+    grand+=dsum;
+    if(emps.length>1)h+=`<td class="num daytot">${dsum?fmt(dsum):'—'}</td>`;
+    h+='</tr>';
+  }
+  h+='</tbody><tfoot><tr><td>Total</td>'+emps.map(e=>`<td class="num">${fmt(tot[e.id]||0)}</td>`).join('')+(emps.length>1?`<td class="num">${fmt(grand)}</td>`:'')+'</tr></tfoot>';
+  t.innerHTML=h;
+}
+
+function renderChart(emps,shifts){
+  const svg=$('#chart'),leg=$('#legend');
+  const days=dayList();
+  const val={};
+  for(const s of shifts)val[s.day+'|'+s.id]=(val[s.day+'|'+s.id]||0)+s.work/HOUR;
+  const stacks=days.map(d=>emps.map(e=>val[d+'|'+e.id]||0));
+  const maxV=Math.max(12,...stacks.map(a=>a.reduce((x,y)=>x+y,0)));
+  const top=Math.ceil(maxV/4)*4;
+  const W=Math.max(640,days.length*28+50),H=300,L=36,B=36,T=10,R=8;
+  const bw=(W-L-R)/days.length, ph=H-B-T;
+  let g='';
+  for(let v=0;v<=top;v+=4){const y=T+ph-(v/top)*ph;g+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+4}" text-anchor="end">${v}h</text>`}
+  days.forEach((d,i)=>{
+    let y=T+ph;const x=L+i*bw+bw*0.15,w=bw*0.7;
+    emps.forEach((e,j)=>{const v=stacks[i][j];if(!v)return;const h=(v/top)*ph;y-=h;g+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${e.c}" rx="2"><title>${cap(e.name)} ${ddmm(fromKey(d))}: ${fmt(v*HOUR)}</title></rect>`});
+    const dt=fromKey(d);
+    g+=`<text x="${x+w/2}" y="${H-B+14}" text-anchor="middle">${dt.getDate()}</text><text x="${x+w/2}" y="${H-B+27}" text-anchor="middle" style="font-size:9px">${WD[dt.getDay()].slice(0,1)}</text>`;
+  });
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.minWidth=W+'px';svg.innerHTML=g;
+  leg.innerHTML=emps.map(e=>`<span style="--c:${e.c}">${cap(e.name)}</span>`).join('');
+}
+
+function renderCards(shifts){
+  const box=$('#cards');
+  if(!shifts.length){box.innerHTML='<div class="empty-state">Nenhum turno no período e nos filtros escolhidos.</div>';return}
+  const pos=(t,base)=>Math.max(0,Math.min(100,((t-base)/DAY)*100));
+  const ticks=[6,9,12,15,18,21,24,27];
+  let h='<div class="card"><div class="hdr">Turno</div><div class="axis">'+ticks.map(x=>`<span style="left:${((x-6)/24)*100}%">${pad(x%24)}h</span>`).join('')+'</div><div class="hdr" style="text-align:right">Horas</div>';
+  for(const s of shifts){
+    const d0=fromKey(s.day);const base=new Date(d0.getFullYear(),d0.getMonth(),d0.getDate(),6).getTime();
+    const grid=ticks.slice(1).map(x=>`<div class="grid" style="left:${((x-6)/24)*100}%"></div>`).join('');
+    const segs=s.pairs.map(([a,b])=>{const l=pos(a,base),r=pos(b,base);return `<div class="seg" style="left:${l}%;width:${Math.max(.3,r-l)}%" title="${hm(a)} às ${hm(b)}: ${fmt(b-a)}"></div>`}).join('');
+    const tick=s.loose?`<div class="tick" style="left:${pos(s.loose,base)}%" title="Batida sem par: ${hm(s.loose)}"></div>`:'';
+    h+=`<div class="who"><b>${cap(s.emp.name)}</b><small>${WD[d0.getDay()]} ${ddmm(d0)}</small></div>
+      <div class="track" style="--c:${s.emp.c}">${grid}${segs}${tick}</div>
+      <div class="hrs${s.inc?' inc':''}">${fmt(s.work)}${s.inc?' *':''}</div>
+      <div class="punches">${s.p.map(t=>(dkey(t)!==s.day?ddmm(t)+' ':'')+hm(t)).join('  ·  ')}${s.brk?'  (intervalo '+fmt(s.brk)+')':''}</div>`;
+  }
+  box.innerHTML=h+'</div>';
+}
+
+function renderPend(shifts){
+  const inc=shifts.filter(s=>s.inc);
+  const box=$('#pend');
+  if(!inc.length){box.innerHTML='<li class="empty-state">Tudo certo: todas as entradas têm saída no período filtrado.</li>';return}
+  box.innerHTML=inc.map(s=>{
+    const n=s.p.length;
+    const what=n===1?'Só uma batida no dia, sem entrada e saída':'Faltou uma batida (provavelmente a saída)';
+    const d0=fromKey(s.day);
+    return `<li><div><b style="text-transform:capitalize">${s.emp.name}</b>, ${WD[d0.getDay()]} ${ddmm(d0)}<br><span class="what">${what}</span><br><span style="color:var(--muted);font-size:13px">Batidas: ${s.p.map(hm).join(', ')}</span></div><div class="num" style="font-size:18px;text-align:right">${fmt(s.work)}<br><span style="font-size:12px;color:var(--muted);font-family:'Public Sans',sans-serif">contadas</span></div></li>`}).join('');
+}
+
+// eventos
+$('#from').onchange=e=>{if(e.target.value){st.from=e.target.value;render()}};
+$('#to').onchange=e=>{if(e.target.value){st.to=e.target.value;render()}};
+$('#onlyInc').onchange=e=>{st.onlyInc=e.target.checked;render()};
+function saveSet(){lsSet(LS_SET,JSON.stringify({gap:st.gap,dup:st.dup}))}
+$('#gap').onchange=e=>{const v=+e.target.value;if(v>=4&&v<=30){st.gap=v;saveSet();render()}};
+$('#dup').onchange=e=>{const v=+e.target.value;if(v>=0&&v<=15){st.dup=v;saveSet();render()}};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $('#tab-table').hidden=b.dataset.tab!=='table';$('#tab-chart').hidden=b.dataset.tab!=='chart';
+});
+$('#file').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const text=decode(await f.arrayBuffer());
+  if(load(text,f.name,true)){lsSet(LS_TXT,text);lsSet(LS_NAME,f.name);showMsg('Arquivo '+f.name+' carregado.')}
+  e.target.value='';
+};
+$('#reset').onclick=()=>{lsDel(LS_TXT);lsDel(LS_NAME);load($('#raw').textContent,ORIGINAL_NAME,false);showMsg('Voltou para o arquivo original.')};
+
+// início
+try{const s=JSON.parse(lsGet(LS_SET)||'{}');if(s.gap){st.gap=s.gap;$('#gap').value=s.gap}if(s.dup!=null){st.dup=s.dup;$('#dup').value=s.dup}}catch(e){}
+const saved=lsGet(LS_TXT);
+if(!(saved&&load(saved,lsGet(LS_NAME)||'arquivo carregado',true)))load($('#raw').textContent,ORIGINAL_NAME,false);
+})();
+</script>
+</body>
+</html>
